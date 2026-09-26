@@ -1,6 +1,6 @@
 """src/datafun/app.py - Project script.
 
-Author: Denise Case
+Author: Denise Case & Joseph Tomasso
 Date: 2026-08
 
 HOW TO RUN THIS FILE:
@@ -17,14 +17,16 @@ DOMAIN:
 
 A small business with regions, stores, and employees.
 
-The data is stored in three related CSV files:
+The data is stored in four related CSV files:
 
 - one row per region
 - one row per store
 - one row per employee
+- one row per sale
 
 One region can have many stores.
 One store can have many employees.
+One store can have many sales.
 
 EXPLORE:
 
@@ -90,6 +92,7 @@ DATA_DIR: Final[Path] = Path("data") / "retail"
 REGION_FILE: Final[Path] = DATA_DIR / "region.csv"
 STORE_FILE: Final[Path] = DATA_DIR / "store.csv"
 EMPLOYEE_FILE: Final[Path] = DATA_DIR / "employee.csv"
+SALE_FILE: Final[Path] = DATA_DIR / "sale.csv"
 
 # === LOCATE THE SQLITE DATABASE ===
 
@@ -105,17 +108,21 @@ CHART_PATH: Final[Path] = CHART_DIR / "employees-by-store.png"
 REGION_GRAIN: Final[str] = "one business region"
 STORE_GRAIN: Final[str] = "one store"
 EMPLOYEE_GRAIN: Final[str] = "one employee"
+SALE_GRAIN: Final[str] = "one sale"
 
 # === DESCRIBE THE TABLE RELATIONSHIPS ===
 
 RELATIONSHIP_DECISION: Final[str] = r"""
-The data is stored in three related tables.
+The data is stored in four related tables.
 
 One region can have many stores.
 The stores table uses region_id to identify each store's region.
 
 One store can have many employees.
 The employees table uses store_id to identify each employee's store.
+
+One store can have many sales.
+The sales table uses store_id to identify each sale's store.
 
 The shared keys connect information stored in different tables.
 """
@@ -126,10 +133,11 @@ CUSTOM_QUERY_DECISION: Final[str] = r"""
 I want to compare the number of employees working at each store.
 The result should have one row per store.
 
-The information I need requires all three tables:
+The information I need requires all four tables:
  - region name is in regions,
  - store name is in stores,
  - employee info is in employees.
+ - sales info is in sales.
 """
 
 # === WRITE THE SQL QUERY ===
@@ -188,10 +196,12 @@ def main() -> None:
     log_path(LOG, "regions file", path=REGION_FILE)
     log_path(LOG, "stores file", path=STORE_FILE)
     log_path(LOG, "employees file", path=EMPLOYEE_FILE)
+    log_path(LOG, "sales file", path=SALE_FILE)
 
     regions_df: pd.DataFrame = pd.read_csv(REGION_FILE)
     stores_df: pd.DataFrame = pd.read_csv(STORE_FILE)
     employees_df: pd.DataFrame = pd.read_csv(EMPLOYEE_FILE)
+    sales_df: pd.DataFrame = pd.read_csv(SALE_FILE)
 
     LOG.info("Related tables loaded successfully.")
 
@@ -202,10 +212,12 @@ def main() -> None:
     LOG.info(f"Regions grain: {REGION_GRAIN}")
     LOG.info(f"Stores grain: {STORE_GRAIN}")
     LOG.info(f"Employees grain: {EMPLOYEE_GRAIN}")
+    LOG.info(f"Sales grain: {SALE_GRAIN}")
 
     LOG.info(f"Regions columns: {regions_df.columns.tolist()}")
     LOG.info(f"Stores columns: {stores_df.columns.tolist()}")
     LOG.info(f"Employees columns: {employees_df.columns.tolist()}")
+    LOG.info(f"Sales columns: {sales_df.columns.tolist()}")
 
     LOG.info(RELATIONSHIP_DECISION)
 
@@ -239,6 +251,13 @@ def main() -> None:
 
     employees_df.to_sql(
         "employees",
+        connection,
+        if_exists="replace",
+        index=False,
+    )
+
+    sales_df.to_sql(
+        "sales",
         connection,
         if_exists="replace",
         index=False,
