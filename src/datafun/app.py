@@ -101,7 +101,7 @@ DATABASE_FILE: Final[Path] = DATA_DIR / "business.sqlite"
 # === LOCATE THE CHART OUTPUT ===
 
 CHART_DIR: Final[Path] = Path("docs") / "images"
-CHART_PATH: Final[Path] = CHART_DIR / "employees-by-store.png"
+CHART_PATH: Final[Path] = CHART_DIR / "manager-count-vs-sales.png"
 
 # === DETERMINE WHAT ONE ROW REPRESENTS ===
 
@@ -130,45 +130,63 @@ The shared keys connect information stored in different tables.
 # === DEFINE THE ANALYTICAL QUESTION ===
 
 CUSTOM_QUERY_DECISION: Final[str] = r"""
-I want to compare the number of employees working at each store.
-The result should have one row per store.
+I want to investigate whether the number of managers
+at each store is related to the store's total sales.
 
-The information I need requires all four tables:
- - region name is in regions,
- - store name is in stores,
- - employee info is in employees.
- - sales info is in sales.
+The result should have one row per store
+with the store name, number of managers,
+and total sales.
+
+Employee information is stored in employees.
+Sales information is stored in sales.
+Both tables connect to stores using store_id.
+
+Managers and sales should be summarized by store
+before the results are combined.
 """
 
 # === WRITE THE SQL QUERY ===
 
 CUSTOM_SQL_QUERY: Final[str] = """
+WITH manager_counts AS (
+    SELECT
+        store_id,
+        COUNT(employee_id) AS manager_count
+    FROM employees
+    WHERE role = 'Manager'
+    GROUP BY store_id
+),
+sales_totals AS (
+    SELECT
+        store_id,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY store_id
+)
 SELECT
-    r.region_name,
     s.store_name,
-    COUNT(e.employee_id) AS employee_count
-FROM regions AS r
-JOIN stores AS s
-    ON r.region_id = s.region_id
-LEFT JOIN employees AS e
-    ON s.store_id = e.store_id
-GROUP BY
-    r.region_name,
-    s.store_name
+    mc.manager_count,
+    st.total_sales
+FROM stores AS s
+JOIN manager_counts AS mc
+    ON s.store_id = mc.store_id
+JOIN sales_totals AS st
+    ON s.store_id = st.store_id
 ORDER BY
-    employee_count DESC;
+    s.store_name;
 """
 
 # === CHOOSE A VISUALIZATION ===
 
 CUSTOM_CHART_DECISION: Final[str] = r"""
-The query result has one numeric value
-(employee count) for each store.
+The query result has two numeric values for each store:
+manager count and total sales.
 
-A bar chart works for comparing
-a numeric value across named categories.
-Every pandas df has a
-plot.box() method for creating box plots.
+A scatter plot is appropriate for investigating
+the relationship between two numeric variables.
+
+Manager count will be shown on the x-axis
+and total sales will be shown on the y-axis.
 """
 
 
@@ -285,21 +303,20 @@ def main() -> None:
 
     LOG.info(CUSTOM_CHART_DECISION)
 
-    employee_ax = result_df.plot.bar(
-        x="store_name",
-        y="employee_count",
-        legend=False,
+    sales_ax = result_df.plot.scatter(
+        x="manager_count",
+        y="total_sales",
     )
 
     # CUSTOM: The analyst can customize the returned Matplotlib Axes object.
-    employee_ax.set_title("Employees by Store")
-    employee_ax.set_xlabel("Store")
-    employee_ax.set_ylabel("Number of Employees")
+    sales_ax.set_title("Manager Count vs. Total Sales")
+    sales_ax.set_xlabel("Number of Managers")
+    sales_ax.set_ylabel("Total Sales")
 
     CHART_DIR.mkdir(parents=True, exist_ok=True)
 
     save_chart(
-        employee_ax,
+        sales_ax,
         CHART_PATH,
     )
 
