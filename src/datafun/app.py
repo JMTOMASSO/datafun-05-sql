@@ -297,6 +297,12 @@ def main() -> None:
 
     LOG.info(f"\nQuery result:\n{result_df}")
 
+    correlation = result_df["manager_count"].corr(result_df["total_sales"])
+
+    LOG.info(
+    f"Correlation between manager count and total sales: {correlation:.3f}"
+    )
+
     LOG.info("-------------------------------")
     LOG.info("06. VISUALIZE the query result with Python.")
     LOG.info("-------------------------------")
@@ -332,14 +338,18 @@ def main() -> None:
     # in a simple multi-line raw string.
 
     LOG.info(r"""CUSTOM OBSERVATIONS:
-    The SQL query connected information from
-    the regions, stores, and employees tables.
+    The SQL query summarized manager counts and total sales
+    for each store.
 
     The result has one row per store.
 
-    I observed ...
+    I observed a weak positive correlation (r = 0.258)
+    between manager count and total sales. Stores with more
+    managers tended to have somewhat higher sales, but the
+    relationship was not strong.
 
-    Based on this result, I would next like to explore ...
+    Based on this result, I would next like to explore whether
+    store size may help explain differences in total sales.
     """)
 
     LOG.info("-------------------------------")

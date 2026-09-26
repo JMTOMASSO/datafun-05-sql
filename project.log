@@ -933,3 +933,158 @@ and total sales will be shown on the y-axis.
 2026-09-26 14:07:12 | INFO | P05 | ===================================
 2026-09-26 14:07:12 | INFO | P05 | END main() - Executed successfully!
 2026-09-26 14:07:12 | INFO | P05 | ===================================
+2026-09-26 14:20:17 | INFO | P05 | === RUN START ===
+2026-09-26 14:20:17 | INFO | P05 | project=P05 - PYTHON AND SQL
+2026-09-26 14:20:17 | INFO | P05 | repo_dir=datafun-05-sql
+2026-09-26 14:20:17 | INFO | P05 | python=3.14.7
+2026-09-26 14:20:17 | INFO | P05 | os=Windows 11
+2026-09-26 14:20:17 | INFO | P05 | shell=powershell
+2026-09-26 14:20:17 | INFO | P05 | cwd=.
+2026-09-26 14:20:17 | INFO | P05 | github_actions=False
+2026-09-26 14:20:17 | INFO | P05 | ===================================
+2026-09-26 14:20:17 | INFO | P05 | START main()
+2026-09-26 14:20:17 | INFO | P05 | ===================================
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 01. LOAD the related tables.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | regions file = data\retail\region.csv
+2026-09-26 14:20:17 | INFO | P05 | stores file = data\retail\store.csv
+2026-09-26 14:20:17 | INFO | P05 | employees file = data\retail\employee.csv
+2026-09-26 14:20:17 | INFO | P05 | sales file = data\retail\sale.csv
+2026-09-26 14:20:17 | INFO | P05 | Related tables loaded successfully.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 02. INSPECT the grain and keys.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | Regions grain: one business region
+2026-09-26 14:20:17 | INFO | P05 | Stores grain: one store
+2026-09-26 14:20:17 | INFO | P05 | Employees grain: one employee
+2026-09-26 14:20:17 | INFO | P05 | Sales grain: one sale
+2026-09-26 14:20:17 | INFO | P05 | Regions columns: ['region_id', 'region_name']
+2026-09-26 14:20:17 | INFO | P05 | Stores columns: ['store_id', 'store_name', 'region_id', 'store_type', 'square_feet']
+2026-09-26 14:20:17 | INFO | P05 | Employees columns: ['employee_id', 'employee_name', 'store_id', 'role', 'years_employed']
+2026-09-26 14:20:17 | INFO | P05 | Sales columns: ['sale_id', 'store_id', 'product_group', 'items_sold', 'sale_amount', 'payment_type']
+2026-09-26 14:20:17 | INFO | P05 | 
+The data is stored in four related tables.
+
+One region can have many stores.
+The stores table uses region_id to identify each store's region.
+
+One store can have many employees.
+The employees table uses store_id to identify each employee's store.
+
+One store can have many sales.
+The sales table uses store_id to identify each sale's store.
+
+The shared keys connect information stored in different tables.
+
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 03. CREATE a SQLite database.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | SQLite database = data\retail\business.sqlite
+2026-09-26 14:20:17 | INFO | P05 | SQLite database connection created.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 04. LOAD the tables into SQLite.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | Related tables loaded into SQLite.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 05. QUERY across related tables with SQL.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 
+I want to investigate whether the number of managers
+at each store is related to the store's total sales.
+
+The result should have one row per store
+with the store name, number of managers,
+and total sales.
+
+Employee information is stored in employees.
+Sales information is stored in sales.
+Both tables connect to stores using store_id.
+
+Managers and sales should be summarized by store
+before the results are combined.
+
+2026-09-26 14:20:17 | INFO | P05 | 
+SQL query:
+
+WITH manager_counts AS (
+    SELECT
+        store_id,
+        COUNT(employee_id) AS manager_count
+    FROM employees
+    WHERE role = 'Manager'
+    GROUP BY store_id
+),
+sales_totals AS (
+    SELECT
+        store_id,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY store_id
+)
+SELECT
+    s.store_name,
+    mc.manager_count,
+    st.total_sales
+FROM stores AS s
+JOIN manager_counts AS mc
+    ON s.store_id = mc.store_id
+JOIN sales_totals AS st
+    ON s.store_id = st.store_id
+ORDER BY
+    s.store_name;
+
+2026-09-26 14:20:17 | INFO | P05 | 
+Query result:
+          store_name  manager_count  total_sales
+0     Bayou Crossing              1       786.96
+1      Canyon Center              2      1665.94
+2        Cedar Plaza              2      1163.52
+3      Coastal Plaza              1      2131.11
+4     Desert Springs              3      1572.68
+5       Harbor Point              1      2388.35
+6   Lakeside Commons              1      1541.37
+7    Magnolia Market              2      1998.44
+8       Maple Square              2      1633.93
+9          Northgate              4      2284.10
+10  Peachtree Center              3      1584.73
+11     Pine Crossing              3      1182.72
+12    Prairie Center              5      2074.11
+13      River Market              3      2243.46
+14   Sunrise Commons              2       977.72
+2026-09-26 14:20:17 | INFO | P05 | Correlation between manager count and total sales: 0.258
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 06. VISUALIZE the query result with Python.
+2026-09-26 14:20:17 | INFO | P05 | -------------------------------
+2026-09-26 14:20:17 | INFO | P05 | 
+The query result has two numeric values for each store:
+manager count and total sales.
+
+A scatter plot is appropriate for investigating
+the relationship between two numeric variables.
+
+Manager count will be shown on the x-axis
+and total sales will be shown on the y-axis.
+
+2026-09-26 14:20:18 | INFO | P05 | Chart saved successfully at docs\images\manager-count-vs-sales.png.
+2026-09-26 14:20:18 | INFO | P05 | -------------------------------
+2026-09-26 14:20:18 | INFO | P05 | 07. SUMMARIZE what you found.
+2026-09-26 14:20:18 | INFO | P05 | -------------------------------
+2026-09-26 14:20:18 | INFO | P05 | CUSTOM OBSERVATIONS:
+    The SQL query connected information from
+    the regions, stores, and employees tables.
+
+    The result has one row per store.
+
+    I observed ...
+
+    Based on this result, I would next like to explore ...
+    
+2026-09-26 14:20:18 | INFO | P05 | -------------------------------
+2026-09-26 14:20:18 | INFO | P05 | 08. DISPLAY the visualization.
+2026-09-26 14:20:18 | INFO | P05 | -------------------------------
+2026-09-26 14:20:18 | INFO | P05 | In a script, call plt.show() at the end to display all charts.
+2026-09-26 14:20:18 | INFO | P05 | Close all chart windows (with the close button) to continue.
+2026-09-26 14:20:23 | INFO | P05 | ===================================
+2026-09-26 14:20:23 | INFO | P05 | END main() - Executed successfully!
+2026-09-26 14:20:23 | INFO | P05 | ===================================
