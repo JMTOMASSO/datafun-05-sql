@@ -299,9 +299,7 @@ def main() -> None:
 
     correlation = result_df["manager_count"].corr(result_df["total_sales"])
 
-    LOG.info(
-    f"Correlation between manager count and total sales: {correlation:.3f}"
-    )
+    LOG.info(f"Correlation between manager count and total sales: {correlation:.3f}")
 
     LOG.info("-------------------------------")
     LOG.info("06. VISUALIZE the query result with Python.")
